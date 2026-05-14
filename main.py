@@ -154,8 +154,50 @@ def log_complaint(order_id: int, issue: str, config: RunnableConfig) -> str:
             cursor.close()
             conn.close()
 
+@tool
+def read_long_term_memory(config: RunnableConfig) -> str:
+    """Retrieve all long-term memory records (preferences, past issues) stored for this customer."""
+    customer_id = config["configurable"]["customer_id"]
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        query = "SELECT `key`, value, created_at FROM customer_memory WHERE customer_id = %s ORDER BY created_at DESC;"
+        cursor.execute(query, (customer_id,))
+        results = cursor.fetchall()
+        if results:
+            lines = [f"- {r['key']}: {r['value']} (saved: {r['created_at']})" for r in results]
+            return f"Long-term memory for customer {customer_id}:\n" + "\n".join(lines)
+        return f"No long-term memory found for customer {customer_id}."
+    except mysql.connector.Error as err:
+        return f"Database error: {err}"
+    finally:
+        if 'conn' in locals() and conn.is_connected():
+            cursor.close()
+            conn.close()
+
+
+@tool
+def write_long_term_memory(key: str, value: str, config: RunnableConfig) -> str:
+    """Save a customer preference or important note to long-term memory (MySQL customer_memory table)."""
+    customer_id = config["configurable"]["customer_id"]
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        query = "INSERT INTO customer_memory (customer_id, `key`, value) VALUES (%s, %s, %s);"
+        cursor.execute(query, (customer_id, key, value))
+        conn.commit()
+        return f"Saved to long-term memory: '{key}' = '{value}' for customer {customer_id}."
+    except mysql.connector.Error as err:
+        return f"Database error: {err}"
+    finally:
+        if 'conn' in locals() and conn.is_connected():
+            cursor.close()
+            conn.close()
+
+
 # Bind tools to the LLM so it knows how to use them
-tools = [order_lookup, customer_profile, request_refund, log_complaint]
+tools = [order_lookup, customer_profile, request_refund, log_complaint,
+         read_long_term_memory, write_long_term_memory]
 llm_with_tools = llm.bind_tools(tools)
 
 # ==========================================
@@ -175,8 +217,13 @@ def planner_node(state: AgentState):
     """
     system_prompt = SystemMessage(
         content="You are an intelligent customer service agent. "
-                "Analyze the user's input, extract intents (refund, tracking, complaint), "
-                "and extract entities (order id). Select the appropriate tools to fulfill the request."
+                "Analyze the user's input, extract intents (refund, tracking, complaint, memory query, preference), "
+                "and extract entities (order_id, product, preference). "
+                "Available tools: order_lookup, customer_profile, request_refund, log_complaint, "
+                "read_long_term_memory, write_long_term_memory. "
+                "For multi-step requests (e.g. 'refund if delivered'), first call order_lookup, then decide. "
+                "For personalization queries (e.g. 'late again'), call read_long_term_memory first to check history. "
+                "When a user asks to remember a preference, call write_long_term_memory."
     )
     # The LLM will either return a standard response or a tool call (the "Plan")
     response = llm_with_tools.invoke([system_prompt] + state["messages"])
