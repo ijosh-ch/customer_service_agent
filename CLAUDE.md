@@ -21,7 +21,7 @@ Natural language-driven Customer Service Agent built with **LangGraph** + **Lang
 | File | Purpose |
 | --- | --- |
 | `main.py` | Full agent: DB connection, all 6 tools, LangGraph nodes, graph compilation, interactive CLI entry point |
-| `demo.ipynb` | Jupyter demo notebook — all 11 test cases from Section 9, one cell per case, with DB-verify cell for Test 9 |
+| `demo.ipynb` | Jupyter demo notebook — all 11 test cases from Section 9, one cell per case; includes graph visualisation cell, DB-reset cell (restores order statuses for re-runs), and DB-verify cell for Test 9 |
 | `init_db.sql` | MySQL schema + seed data targeting remote `llm-course` DB; run with `mysql … < init_db.sql` |
 | `pyproject.toml` | uv project config and Python dependencies |
 | `uv.lock` | Locked dependency tree (committed, do not edit manually) |
@@ -198,3 +198,4 @@ DB_NAME=llm-course
 
 2026/05/14: 12.00 - 12.25
 2026/05/15: 17.15 - 18.15
+2026/05/16: 00.58 - 02.28
