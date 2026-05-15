@@ -19,13 +19,15 @@ Natural language-driven Customer Service Agent built with **LangGraph** + **Lang
 ## File Inventory
 
 | File | Purpose |
-|------|---------|
-| `main.py` | Full agent: DB connection, all 6 tools, LangGraph nodes, graph compilation, example run |
-| `demo.ipynb` | Jupyter demo notebook — all 11 test cases from Section 9, one cell per case |
-| `init_db.sql` | MySQL schema creation + mock seed data covering every test case |
+| --- | --- |
+| `main.py` | Full agent: DB connection, all 6 tools, LangGraph nodes, graph compilation, interactive CLI entry point |
+| `demo.ipynb` | Jupyter demo notebook — all 11 test cases from Section 9, one cell per case, with DB-verify cell for Test 9 |
+| `init_db.sql` | MySQL schema + seed data targeting remote `llm-course` DB; run with `mysql … < init_db.sql` |
 | `pyproject.toml` | uv project config and Python dependencies |
 | `uv.lock` | Locked dependency tree (committed, do not edit manually) |
-| `.env.example` | Template for required environment variables |
+| `.python-version` | Pins Python 3.10 for uv/pyenv |
+| `.env.example` | Template for required environment variables (DB defaults pre-filled for remote server) |
+| `.gitignore` | Excludes `.env` |
 | `README.md` | Setup guide, architecture overview, example interaction |
 | `LLM project 1.pdf` | Original project specification (Section 9 = grading checklist) |
 
@@ -35,7 +37,7 @@ Natural language-driven Customer Service Agent built with **LangGraph** + **Lang
 
 ### LangGraph Workflow
 
-```
+```text
 User Input
     |
 [Planner Node]   — LLM reasons about intent, selects tools
@@ -56,7 +58,7 @@ Edge logic: `route_planner_output` → `"tools"` if the planner emitted tool cal
 ### Nodes
 
 | Node | Function | File location |
-|------|----------|---------------|
+| --- | --- | --- |
 | `planner_node` | Extract intent + entities, select tools | `main.py` |
 | `ToolNode` (prebuilt) | Execute bound tool calls | `main.py` (LangGraph prebuilt) |
 | `verifier_node` | Compliance check + rewrite if needed | `main.py` |
@@ -64,9 +66,9 @@ Edge logic: `route_planner_output` → `"tools"` if the planner emitted tool cal
 ### Memory
 
 | Type | Mechanism | Scope |
-|------|-----------|-------|
-| Short-term (STM) | `LangGraph MemorySaver` keyed on `thread_id` | Session (in-process) |
-| Long-term (LTM) | MySQL `customer_memory` table keyed on `customer_id` | Persistent across sessions |
+| --- | --- | --- |
+| Short-term (STM) | `LangGraph` `MemorySaver` keyed on `thread_id` | Session (in-process) |
+| Long-term (LTM) | MySQL `customer_memory` table on remote DB keyed on `customer_id` | Persistent across sessions |
 
 ---
 
@@ -75,7 +77,7 @@ Edge logic: `route_planner_output` → `"tools"` if the planner emitted tool cal
 All tools receive `config: RunnableConfig` injected by LangGraph. `customer_id` and `thread_id` are read from `config["configurable"]`.
 
 | Tool | SQL Operation | Description |
-|------|--------------|-------------|
+| --- | --- | --- |
 | `order_lookup(order_id)` | `SELECT * FROM orders WHERE order_id=? AND customer_id=?` | Retrieve order details |
 | `customer_profile()` | `SELECT * FROM customers WHERE customer_id=?` | Retrieve customer profile |
 | `request_refund(order_id)` | `UPDATE orders SET status='refund_requested' WHERE …` | Initiate refund |
@@ -87,7 +89,11 @@ All tools enforce **customer_id ownership** — queries are always scoped to the
 
 ---
 
-## Database Schema (`customer_service`)
+## Database
+
+**Remote MySQL**: `140.118.122.119:3306` / database `llm-course` / user `llm-student`
+
+All four tables live on this server; no local MySQL is required.
 
 ```sql
 customers      (customer_id PK, name, email, created_at)
@@ -99,12 +105,13 @@ customer_memory(id PK AUTO, customer_id, `key`, value, created_at)
 ### Mock Data (test-case aligned)
 
 | customer_id | name | owns orders |
-|-------------|------|-------------|
+| --- | --- | --- |
 | 1 | Alice Smith | 12345 (shipped), 5678 (delivered) |
 | 2 | Bob Johnson | 1001 (processing), 7890 (delivered) |
 | 3 | Charlie Davis | 2222 (delivered) |
 
 Pre-seeded LTM:
+
 - Customer 1: `resolution_preference = prefers refunds over store credit`
 - Customer 3: `past_issues = frequent late deliveries`
 
@@ -113,7 +120,7 @@ Pre-seeded LTM:
 ## Test Score Checklist (Section 9)
 
 | # | Function | Test Query | Customer | Expected |
-|---|----------|-----------|----------|---------|
+| --- | --- | --- | --- | --- |
 | 1 | Intent Parsing | Where is my order 12345? | 1 | intent=tracking, order_id extracted |
 | 2 | OrderLookupTool | Check status of order 1001 | 2 | SELECT orders |
 | 3 | CustomerProfileTool | Show my profile | 1 | SELECT customers |
@@ -133,24 +140,28 @@ All 11 cases are individually runnable in `demo.ipynb`.
 ## Running
 
 ### Initial setup
+
 ```bash
-# 1. Create MySQL database and seed data
-mysql -u root -p < init_db.sql
+# 1. (Optional) Re-seed the remote DB
+mysql -h 140.118.122.119 -u llm-student -pllm12345 llm-course < init_db.sql
 
 # 2. Configure credentials
 cp .env.example .env
-# Edit .env: OPENAI_API_KEY, DB_HOST, DB_USER, DB_PASSWORD, DB_NAME
+# Edit .env: set OPENAI_API_KEY (DB values already default to remote server)
 
 # 3. Install dependencies
 uv sync
 ```
 
-### Run agent (CLI)
+### Run agent (CLI — interactive loop)
+
 ```bash
 uv run main.py
+# Prompts for customer_id, then accepts free-form queries until 'exit'
 ```
 
 ### Run demo (Jupyter)
+
 ```bash
 uv run jupyter notebook demo.ipynb
 # or
@@ -158,13 +169,18 @@ uv run jupyter lab
 ```
 
 ### Environment variables (`.env`)
-```
+
+```bash
 OPENAI_API_KEY=...
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=...
-DB_NAME=customer_service
+
+DB_HOST=140.118.122.119
+DB_PORT=3306
+DB_USER=llm-student
+DB_PASSWORD=llm12345
+DB_NAME=llm-course
 ```
+
+`get_db_connection()` in `main.py` reads these with the remote values as hard-coded defaults, so the agent works even without a `.env` file as long as `OPENAI_API_KEY` is set.
 
 ---
 
@@ -181,3 +197,4 @@ DB_NAME=customer_service
 ## Working Sessions
 
 2026/05/14: 12.00 - 12.25
+2026/05/15: 17.15 - 18.15

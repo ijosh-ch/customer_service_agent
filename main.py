@@ -1,10 +1,7 @@
 import warnings
 from langchain_core._api.deprecation import LangChainPendingDeprecationWarning
 
-warnings.filterwarnings(
-    "ignore",
-    category=LangChainPendingDeprecationWarning
-)
+warnings.filterwarnings("ignore", category=LangChainPendingDeprecationWarning)
 
 import os
 import mysql.connector
@@ -18,151 +15,128 @@ from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.runnables import RunnableConfig
-
-# Set your OpenAI API Key
 from dotenv import load_dotenv
 
 load_dotenv()
 
-config = {
-    'customer_id': 1, 
-    }
-
-# Initialize your chosen LLM
+# ==========================================
+# LLM
+# ==========================================
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
 # ==========================================
-# 1. DATABASE CONNECTION (Mocked for safety)
+# DATABASE CONNECTION (remote llm-course DB)
 # ==========================================
 def get_db_connection():
-    # Replace with your actual MySQL credentials
     return mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="12345678", 
-            database="customer_service", 
-        )
+        host=os.getenv("DB_HOST", "140.118.122.119"),
+        port=int(os.getenv("DB_PORT", "3306")),
+        user=os.getenv("DB_USER", "llm-student"),
+        password=os.getenv("DB_PASSWORD", "llm12345"),
+        database=os.getenv("DB_NAME", "llm-course"),
+    )
 
 # ==========================================
-# 2. DEFINE TOOLS [cite: 68-80]
+# TOOLS
 # ==========================================
-import mysql.connector
-from langchain_core.tools import tool
-
-# Assuming your connection function from earlier
 
 @tool
 def order_lookup(order_id: int, config: RunnableConfig) -> str:
     """Retrieve order details for a specific order ID."""
-    verify_customer_id = config["configurable"]["customer_id"]
+    customer_id = config["configurable"]["customer_id"]
     try:
         conn = get_db_connection()
-        # dictionary=True returns the row as a dict, making it easy for the LLM to read
-        cursor = conn.cursor(dictionary=True) 
-        
-        query = "SELECT * FROM orders WHERE order_id = %s AND customer_id = %s;"
-        cursor.execute(query, (order_id, verify_customer_id))
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(
+            "SELECT * FROM orders WHERE order_id = %s AND customer_id = %s;",
+            (order_id, customer_id),
+        )
         result = cursor.fetchone()
-        
-        if result:
-            # Convert datetime objects to string if necessary, but LLM usually handles dict stringification well
-            return f"Order details found: {result}"
-        else:
-            return f"No order found with ID {order_id}."
-            
+        return f"Order details: {result}" if result else f"No order found with ID {order_id} for this customer."
     except mysql.connector.Error as err:
-        return f"Database error occurred: {err}"
+        return f"Database error: {err}"
     finally:
-        if 'conn' in locals() and conn.is_connected():
+        if "conn" in locals() and conn.is_connected():
             cursor.close()
             conn.close()
 
 
 @tool
 def customer_profile(config: RunnableConfig) -> str:
-    """Retrieve customer profile information."""
+    """Retrieve the current customer's profile information."""
     customer_id = config["configurable"]["customer_id"]
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-        
-        query = "SELECT * FROM customers WHERE customer_id = %s;"
-        cursor.execute(query, (customer_id,))
+        cursor.execute(
+            "SELECT * FROM customers WHERE customer_id = %s;",
+            (customer_id,),
+        )
         result = cursor.fetchone()
-        
-        if result:
-            return f"Customer profile found: {result}"
-        else:
-            return f"No customer found with ID {customer_id}."
-            
+        return f"Customer profile: {result}" if result else f"No customer found with ID {customer_id}."
     except mysql.connector.Error as err:
-        return f"Database error occurred: {err}"
+        return f"Database error: {err}"
     finally:
-        if 'conn' in locals() and conn.is_connected():
+        if "conn" in locals() and conn.is_connected():
             cursor.close()
             conn.close()
 
 
 @tool
 def request_refund(order_id: int, config: RunnableConfig) -> str:
-    """Initiate a refund for a specific order."""
+    """Initiate a refund for a specific order belonging to the current customer."""
     customer_id = config["configurable"]["customer_id"]
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
-        query = "UPDATE orders SET status='refund_requested' WHERE order_id = %s AND customer_id = %s;"
-        cursor.execute(query, (order_id, customer_id))
-        
-        # CRITICAL: Commit the transaction to save changes to MySQL
+        cursor.execute(
+            "UPDATE orders SET status='refund_requested' WHERE order_id = %s AND customer_id = %s;",
+            (order_id, customer_id),
+        )
         conn.commit()
-        
-        # Check if the row was actually updated (in case a bad order_id was passed)
         if cursor.rowcount > 0:
-            return f"Success: Order {order_id} status updated to refund_requested."
-        else:
-            return f"Failed: No order found with ID {order_id} to update."
-            
+            return f"Success: Order {order_id} has been updated to refund_requested."
+        return f"Failed: Order {order_id} not found or does not belong to this customer."
     except mysql.connector.Error as err:
-        return f"Database error occurred: {err}"
+        return f"Database error: {err}"
     finally:
-        if 'conn' in locals() and conn.is_connected():
+        if "conn" in locals() and conn.is_connected():
             cursor.close()
             conn.close()
 
 
 @tool
 def log_complaint(order_id: int, issue: str, config: RunnableConfig) -> str:
-    """Log a customer complaint."""
+    """Log a customer complaint for a specific order."""
     customer_id = config["configurable"]["customer_id"]
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
-        query = "INSERT INTO complaints (customer_id, order_id, issue, status) VALUES (%s, %s, %s, 'open');"
-        cursor.execute(query, (customer_id, order_id, issue))
-        
-        # CRITICAL: Commit the transaction to save changes to MySQL
+        cursor.execute(
+            "INSERT INTO complaints (customer_id, order_id, issue, status) VALUES (%s, %s, %s, 'open');",
+            (customer_id, order_id, issue),
+        )
         conn.commit()
-        
-        return f"Success: Complaint logged for order {order_id}."
-        
+        return f"Success: Complaint logged for order {order_id}. Issue: {issue}"
     except mysql.connector.Error as err:
-        return f"Database error occurred: {err}"
+        return f"Database error: {err}"
     finally:
-        if 'conn' in locals() and conn.is_connected():
+        if "conn" in locals() and conn.is_connected():
             cursor.close()
             conn.close()
 
+
 @tool
 def read_long_term_memory(config: RunnableConfig) -> str:
-    """Retrieve all long-term memory records (preferences, past issues) stored for this customer."""
+    """Read all long-term memory records (preferences, past issues) stored for this customer from MySQL."""
     customer_id = config["configurable"]["customer_id"]
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-        query = "SELECT `key`, value, created_at FROM customer_memory WHERE customer_id = %s ORDER BY created_at DESC;"
-        cursor.execute(query, (customer_id,))
+        cursor.execute(
+            "SELECT `key`, value, created_at FROM customer_memory WHERE customer_id = %s ORDER BY created_at DESC;",
+            (customer_id,),
+        )
         results = cursor.fetchall()
         if results:
             lines = [f"- {r['key']}: {r['value']} (saved: {r['created_at']})" for r in results]
@@ -171,139 +145,158 @@ def read_long_term_memory(config: RunnableConfig) -> str:
     except mysql.connector.Error as err:
         return f"Database error: {err}"
     finally:
-        if 'conn' in locals() and conn.is_connected():
+        if "conn" in locals() and conn.is_connected():
             cursor.close()
             conn.close()
 
 
 @tool
 def write_long_term_memory(key: str, value: str, config: RunnableConfig) -> str:
-    """Save a customer preference or important note to long-term memory (MySQL customer_memory table)."""
+    """Save a customer preference or important note to long-term memory in MySQL (persistent across sessions)."""
     customer_id = config["configurable"]["customer_id"]
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        query = "INSERT INTO customer_memory (customer_id, `key`, value) VALUES (%s, %s, %s);"
-        cursor.execute(query, (customer_id, key, value))
+        cursor.execute(
+            "INSERT INTO customer_memory (customer_id, `key`, value) VALUES (%s, %s, %s);",
+            (customer_id, key, value),
+        )
         conn.commit()
         return f"Saved to long-term memory: '{key}' = '{value}' for customer {customer_id}."
     except mysql.connector.Error as err:
         return f"Database error: {err}"
     finally:
-        if 'conn' in locals() and conn.is_connected():
+        if "conn" in locals() and conn.is_connected():
             cursor.close()
             conn.close()
 
 
-# Bind tools to the LLM so it knows how to use them
-tools = [order_lookup, customer_profile, request_refund, log_complaint,
-         read_long_term_memory, write_long_term_memory]
+# Bind all tools to the LLM
+tools = [
+    order_lookup,
+    customer_profile,
+    request_refund,
+    log_complaint,
+    read_long_term_memory,
+    write_long_term_memory,
+]
 llm_with_tools = llm.bind_tools(tools)
 
 # ==========================================
-# 3. DEFINE THE STATE [cite: 118-120]
+# STATE
 # ==========================================
 class AgentState(TypedDict):
-    # Tracks conversation history and maintains context across turns [cite: 121-122]
     messages: Annotated[list, add_messages]
 
 # ==========================================
-# 4. DEFINE THE NODES [cite: 36-67]
+# NODES
 # ==========================================
 
 def planner_node(state: AgentState):
-    """
-    Extracts intent, extracts entities, and generates an execution plan [cite: 37-40].
-    """
+    """ReAct Planner: extracts intent + entities, selects tools."""
     system_prompt = SystemMessage(
-        content="You are an intelligent customer service agent. "
-                "Analyze the user's input, extract intents (refund, tracking, complaint, memory query, preference), "
-                "and extract entities (order_id, product, preference). "
-                "Available tools: order_lookup, customer_profile, request_refund, log_complaint, "
-                "read_long_term_memory, write_long_term_memory. "
-                "For multi-step requests (e.g. 'refund if delivered'), first call order_lookup, then decide. "
-                "For personalization queries (e.g. 'late again'), call read_long_term_memory first to check history. "
-                "When a user asks to remember a preference, call write_long_term_memory."
+        content=(
+            "You are an intelligent customer service agent following the ReAct paradigm.\n"
+            "Step 1 — Reason: analyze the user's input, identify intent (tracking, refund, complaint, "
+            "memory query, preference), and extract entities (order_id, product).\n"
+            "Step 2 — Act: select the appropriate tool(s).\n\n"
+            "Available tools: order_lookup, customer_profile, request_refund, log_complaint, "
+            "read_long_term_memory, write_long_term_memory.\n\n"
+            "Guidelines:\n"
+            "- Multi-step (e.g. 'refund if delivered'): call order_lookup first, then decide.\n"
+            "- Personalization (e.g. 'late again'): call read_long_term_memory first.\n"
+            "- Preference storage: call write_long_term_memory.\n"
+            "- Always scope queries to the authenticated customer."
+        )
     )
-    # The LLM will either return a standard response or a tool call (the "Plan")
     response = llm_with_tools.invoke([system_prompt] + state["messages"])
     return {"messages": [response]}
 
+
 def verifier_node(state: AgentState):
-    """
-    Ensures correctness, prevents hallucinations, and enforces policy compliance [cite: 65-67].
-    """
-    # Grab the most recent message
-    last_message = state["messages"][-1]
-    
-    # Simple verification prompt using the base LLM (no tools needed here)
+    """Verifier: prevents hallucinations and enforces policy compliance."""
     verify_prompt = SystemMessage(
-        content="You are a strict compliance verifier for a customer service agent. "
-                "Review the proposed response. Ensure it does not hallucinate data, "
-                "is polite, and complies with standard refund/complaint policies. "
-                "If it is good, output the exact response. If it violates policy, rewrite it safely."
+        content=(
+            "You are a strict compliance verifier for a customer service agent.\n"
+            "Review the conversation and the proposed response.\n"
+            "Rules:\n"
+            "1. Do NOT hallucinate order details, customer data, or outcomes.\n"
+            "2. If a tool returned 'not found', the response must acknowledge this — never invent data.\n"
+            "3. Be polite, empathetic, and professional.\n"
+            "4. If the proposed response violates policy or contains hallucinations, rewrite it safely.\n"
+            "Output only the final customer-facing response."
+        )
     )
-    
-    # We pass the conversation context to the verifier
     verified_response = llm.invoke([verify_prompt] + state["messages"])
     return {"messages": [verified_response]}
 
 # ==========================================
-# 5. EDGE LOGIC
+# EDGE LOGIC
 # ==========================================
+
 def route_planner_output(state: AgentState) -> Literal["tools", "verifier"]:
-    """
-    Conditional edge: If the planner decided to call a tool, go to Tool Node. 
-    Otherwise, go straight to the Verifier.
-    """
     last_message = state["messages"][-1]
     if last_message.tool_calls:
         return "tools"
     return "verifier"
 
 # ==========================================
-# 6. BUILD THE GRAPH [cite: 21-35]
+# GRAPH
 # ==========================================
-workflow = StateGraph(AgentState)
 
-# Add Nodes
+workflow = StateGraph(AgentState)
 workflow.add_node("planner", planner_node)
-workflow.add_node("tools", ToolNode(tools)) # LangGraph's prebuilt tool execution node
+workflow.add_node("tools", ToolNode(tools))
 workflow.add_node("verifier", verifier_node)
 
-# Add Edges to match the specification
 workflow.add_edge(START, "planner")
 workflow.add_conditional_edges("planner", route_planner_output)
-workflow.add_edge("tools", "verifier") # Tool Node output implicitly acts as Memory Update [cite: 52, 56]
+workflow.add_edge("tools", "verifier")
 workflow.add_edge("verifier", END)
 
-# Compile with Short-Term Memory Checkpointer
 memory = MemorySaver()
 app = workflow.compile(checkpointer=memory)
 
 # ==========================================
-# 7. RUN THE AGENT (Example Test) [cite: 133-144]
+# CLI ENTRY POINT
 # ==========================================
+
 if __name__ == "__main__":
-    # Create a unique thread ID for the session memory
-    config = {"configurable": {"thread_id": "customer_session_001", "customer_id": 2}}
-    
-    # User Input
-    user_query = "where is my orders 1001 and 1002?" # [cite: 134]
-    print(f"User: {user_query}\n")
-    
-    # Stream the execution to see the ReAct steps [cite: 135-142]
-    events = app.stream(
-        {"messages": [HumanMessage(content=user_query)]}, 
-        config, 
-        stream_mode="values"
-    )
-    
-    for event in events:
-        message = event["messages"][-1]
-        if isinstance(message, AIMessage) and message.tool_calls:
-            print(f"[Planner] Decided to call tools: {[t['name'] for t in message.tool_calls]}")
-        elif message.type == "tool":
-            print(f"[Tool Execution] {message.name}: {message.content}")
-        elif isinstance(message, AIMessage) and not message.tool_calls:
-             print(f"\n[Final Response from Verifier]: {message.content}")
+    import uuid
+
+    print("=" * 60)
+    print("  Intelligent Customer Service Agent (ReAct + LangGraph)")
+    print("  LTM backend : MySQL @ 140.118.122.119 / llm-course")
+    print("  STM backend : LangGraph MemorySaver (in-process)")
+    print("=" * 60)
+
+    customer_id = int(input("\nEnter customer_id (1=Alice, 2=Bob, 3=Charlie): ").strip() or "1")
+    thread_id = f"cli_{uuid.uuid4().hex[:8]}"
+    print(f"\nSession started. Thread: {thread_id}  Customer: {customer_id}")
+    print("Type 'exit' to quit.\n")
+
+    while True:
+        user_input = input("You: ").strip()
+        if user_input.lower() in ("exit", "quit", "q"):
+            print("Goodbye!")
+            break
+        if not user_input:
+            continue
+
+        cfg = {"configurable": {"thread_id": thread_id, "customer_id": customer_id}}
+        events = app.stream(
+            {"messages": [HumanMessage(content=user_input)]},
+            cfg,
+            stream_mode="values",
+        )
+
+        for event in events:
+            msg = event["messages"][-1]
+            if isinstance(msg, AIMessage) and msg.tool_calls:
+                for tc in msg.tool_calls:
+                    print(f"  [Planner → Tool] {tc['name']}({tc.get('args', {})})")
+            elif msg.type == "tool":
+                preview = msg.content[:200] + ("..." if len(msg.content) > 200 else "")
+                print(f"  [Tool Result]    {preview}")
+            elif isinstance(msg, AIMessage) and not msg.tool_calls:
+                print(f"\nAgent: {msg.content}\n")
