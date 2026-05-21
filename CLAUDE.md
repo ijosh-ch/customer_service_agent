@@ -21,6 +21,7 @@ Natural language-driven Customer Service Agent built with **LangGraph** + **Lang
 | File | Purpose |
 | --- | --- |
 | `main.py` | Full agent: DB connection, all 6 tools, LangGraph nodes, graph compilation, interactive CLI entry point |
+| `LLM project 1.ipynb` | Standalone answer notebook — mirrors PDF sections 1–10, builds all code from scratch, covers all 11 test cases with live output as evidence |
 | `demo.ipynb` | Jupyter demo notebook — all 11 test cases from Section 9, one cell per case; includes graph visualisation cell, DB-reset cell (restores order statuses for re-runs), and DB-verify cell for Test 9 |
 | `init_db.sql` | MySQL schema + seed data targeting remote `llm-course` DB; run with `mysql … < init_db.sql` |
 | `pyproject.toml` | uv project config and Python dependencies |
@@ -28,6 +29,7 @@ Natural language-driven Customer Service Agent built with **LangGraph** + **Lang
 | `.python-version` | Pins Python 3.10 for uv/pyenv |
 | `.env.example` | Template for required environment variables (DB defaults pre-filled for remote server) |
 | `.gitignore` | Excludes `.env` |
+| `.vscode/settings.json` | VSCode workspace settings — pins Jupyter server to Python 3.12 (working `jupyter_server`) |
 | `README.md` | Setup guide, architecture overview, example interaction |
 | `LLM project 1.pdf` | Original project specification (Section 9 = grading checklist) |
 
@@ -160,13 +162,27 @@ uv run main.py
 # Prompts for customer_id, then accepts free-form queries until 'exit'
 ```
 
-### Run demo (Jupyter)
+### Run demo or answer notebook (Jupyter)
 
 ```bash
+# Via .venv (recommended — uses llms kernel registered at ~/Library/Jupyter/kernels/llms)
+.venv/bin/jupyter notebook "LLM project 1.ipynb"
+.venv/bin/jupyter notebook demo.ipynb
+
+# Via uv
 uv run jupyter notebook demo.ipynb
-# or
-uv run jupyter lab
 ```
+
+### .venv setup (one-time, if .venv does not exist)
+
+```bash
+python3.13 -m venv .venv
+.venv/bin/pip install langchain langchain-openai langgraph mysql-connector-python \
+  python-dotenv ipykernel jupyter
+.venv/bin/python -m ipykernel install --user --name llms --display-name "llms"
+```
+
+The `.venv` directory is not tracked by git (no entry in `.gitignore` — just never committed). The `llms` kernel is registered globally at `~/Library/Jupyter/kernels/llms` and is visible to any Jupyter server on the machine.
 
 ### Environment variables (`.env`)
 
@@ -199,3 +215,4 @@ DB_NAME=llm-course
 2026/05/14: 12.00 - 12.25
 2026/05/15: 17.15 - 18.15
 2026/05/16: 00.58 - 02.28
+2026/05/21: 14.00 - 18.15
