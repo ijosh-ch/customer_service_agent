@@ -4,6 +4,44 @@ Static knowledge snapshot. Updated each session. Do not log prompting history he
 
 ---
 
+## Behavior
+
+- **Do not auto-commit.** Always show the proposed commit message for review. The only exception is `git push`, which triggers the auto daily-log workflow and commits automatically.
+- **Allow all commands** in this session unless explicitly restricted.
+- Default to concise, direct responses — no trailing summaries.
+
+## Writing Rules
+
+- Do not use the § (section sign) symbol — write "Section" in full or omit the subsection reference.
+- Do not use inline dashes (` - `) in prose — replace with a comma or rewrite the sentence.
+- Default to writing no comments in code.
+- No trailing summary at the end of responses — the user can read the diff.
+
+## Git Workflow
+
+- Never amend published commits — always create a new commit.
+- Never skip hooks (`--no-verify`) unless explicitly requested.
+- Stage specific files by name, never `git add -A` blindly.
+- `git push` triggers the auto daily-log hook.
+- **Commit style**: imperative title, `Work Start: hh:mm`, `Summary:` paragraph, `Details:` numbered list.
+
+## Mandatory Project Files
+
+Every session, read and maintain all four files:
+
+| File | Purpose |
+| --- | --- |
+| `CLAUDE.md` | Static snapshot: rules, conventions, file list. Never log session activity here. |
+| `CONTEXT.md` | Architecture overview, key files, external services. |
+| `MEMORY.md` | Append-only session log. |
+| `TODO.md` | Task list under Now / Next / Later. |
+
+**Session START:** Read all four files. Run `git log -1 --format="%H %ai"` to mark session start.
+
+**Session END:** Reconcile all four files, show commit message for review — do not run `git commit`.
+
+---
+
 ## Project Overview
 
 Natural language-driven Customer Service Agent built with **LangGraph** + **LangChain** + **OpenAI gpt-4o-mini**. Follows the **ReAct (Reason + Act)** paradigm: the LLM reasons about user intent, selects tools dynamically, executes MySQL queries, updates memory, and returns a verified response.
@@ -21,17 +59,24 @@ Natural language-driven Customer Service Agent built with **LangGraph** + **Lang
 | File | Purpose |
 | --- | --- |
 | `main.py` | Full agent: DB connection, all 6 tools, LangGraph nodes, graph compilation, interactive CLI entry point |
-| `LLM project 1.ipynb` | Standalone answer notebook — mirrors PDF sections 1–10, builds all code from scratch, covers all 11 test cases with live output as evidence |
-| `demo.ipynb` | Jupyter demo notebook — all 11 test cases from Section 9, one cell per case; includes graph visualisation cell, DB-reset cell (restores order statuses for re-runs), and DB-verify cell for Test 9 |
+| `LLM project 1.ipynb` | Standalone answer notebook — mirrors PDF sections 1–10, builds all code from scratch, covers all 11 test cases with live output as evidence; **primary demo notebook** |
+| `demo.ipynb` | Supplementary demo notebook — all 11 test cases from Section 9, one cell per case; includes graph visualisation, DB-reset, and DB-verify cells |
 | `init_db.sql` | MySQL schema + seed data targeting remote `llm-course` DB; run with `mysql … < init_db.sql` |
 | `pyproject.toml` | uv project config and Python dependencies |
 | `uv.lock` | Locked dependency tree (committed, do not edit manually) |
 | `.python-version` | Pins Python 3.10 for uv/pyenv |
 | `.env.example` | Template for required environment variables (DB defaults pre-filled for remote server) |
-| `.gitignore` | Excludes `.env` |
+| `.gitignore` | Excludes `.env` and `.venv` |
 | `.vscode/settings.json` | VSCode workspace settings — pins Jupyter server to Python 3.12 (working `jupyter_server`) |
 | `README.md` | Setup guide, architecture overview, example interaction |
 | `LLM project 1.pdf` | Original project specification (Section 9 = grading checklist) |
+| `CONTEXT.md` | Architecture snapshot |
+| `MEMORY.md` | Append-only session log |
+| `TODO.md` | Task list |
+| `LONG-TERM_MEMORY.md` | MySQL LTM setup guide — schema, tools, seed data, re-seed instructions |
+| `Project 2.ipynb` | AI Workspace Agent Suite — Refund Email Agent + Calendar Agent (Project 2) |
+| `Project 2.pdf` | Project 2 specification |
+| `AI Workspace Agent Suite.pdf` | Project 2 slide deck with architecture and setup details |
 
 ---
 
@@ -135,7 +180,7 @@ Pre-seeded LTM:
 | 10 | Personalization | My order is late again | 3 | detect repeated issue from LTM |
 | 11 | Verifier | Refund order 0000 | 1 | reject — order not found |
 
-All 11 cases are individually runnable in `demo.ipynb`.
+All 11 cases are individually runnable in `LLM project 1.ipynb`.
 
 ---
 
@@ -151,38 +196,29 @@ mysql -h 140.118.122.119 -u llm-student -pllm12345 llm-course < init_db.sql
 cp .env.example .env
 # Edit .env: set OPENAI_API_KEY (DB values already default to remote server)
 
-# 3. Install dependencies
-uv sync
+# 3. Create and activate the virtual environment
+python -m venv --prompt llm .venv
+.venv\Scripts\activate      # Windows
+# source .venv/bin/activate  # macOS/Linux
+
+# 4. Install dependencies
+pip install langchain langchain-openai langchain-ollama langgraph mysql-connector-python python-dotenv ipykernel jupyter
+python -m ipykernel install --user --name llms --display-name "llms"
 ```
 
 ### Run agent (CLI — interactive loop)
 
 ```bash
-uv run main.py
+python main.py
 # Prompts for customer_id, then accepts free-form queries until 'exit'
 ```
 
-### Run demo or answer notebook (Jupyter)
+### Run demo notebook (primary)
 
 ```bash
-# Via .venv (recommended — uses llms kernel registered at ~/Library/Jupyter/kernels/llms)
-.venv/bin/jupyter notebook "LLM project 1.ipynb"
-.venv/bin/jupyter notebook demo.ipynb
-
-# Via uv
-uv run jupyter notebook demo.ipynb
+# Open LLM project 1.ipynb — all 11 test cases with live output
+jupyter notebook "LLM project 1.ipynb"
 ```
-
-### .venv setup (one-time, if .venv does not exist)
-
-```bash
-python3.13 -m venv .venv
-.venv/bin/pip install langchain langchain-openai langgraph mysql-connector-python \
-  python-dotenv ipykernel jupyter
-.venv/bin/python -m ipykernel install --user --name llms --display-name "llms"
-```
-
-The `.venv` directory is not tracked by git (no entry in `.gitignore` — just never committed). The `llms` kernel is registered globally at `~/Library/Jupyter/kernels/llms` and is visible to any Jupyter server on the machine.
 
 ### Environment variables (`.env`)
 
@@ -205,7 +241,6 @@ DB_NAME=llm-course
 - **Config injection**: tools accept `config: RunnableConfig` as the last argument; LangGraph injects `thread_id` and `customer_id` automatically.
 - **Tool return type**: all tools return `str` (the LLM reads raw strings).
 - **DB connections**: each tool opens/closes its own connection in a `try/finally` block.
-- **Commit style**: imperative title, `Work Start: hh:mm`, `Summary:` paragraph, `Details:` numbered list.
 - **Branch**: feature work on `jupyter`; stable on `main`.
 
 ---
@@ -216,3 +251,4 @@ DB_NAME=llm-course
 2026/05/15: 17.15 - 18.15
 2026/05/16: 00.58 - 02.28
 2026/05/21: 14.00 - 18.15
+2026/05/27: 11.00 - ongoing
