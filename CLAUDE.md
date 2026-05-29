@@ -65,8 +65,8 @@ Natural language-driven Customer Service Agent built with **LangGraph** + **Lang
 | `pyproject.toml` | uv project config and Python dependencies |
 | `uv.lock` | Locked dependency tree (committed, do not edit manually) |
 | `.python-version` | Pins Python 3.10 for uv/pyenv |
-| `.env.example` | Template for required environment variables (DB defaults pre-filled for remote server) |
-| `.gitignore` | Excludes `.env` and `.venv` |
+| `.env.example` | Template for required environment variables (DB defaults + Google OAuth fields pre-filled) |
+| `.gitignore` | Excludes `.env`, `.venv`, `.claude/settings.local.json`, and `*.apps.googleusercontent.com.json` |
 | `.vscode/settings.json` | VSCode workspace settings — pins Jupyter server to Python 3.12 (working `jupyter_server`) |
 | `README.md` | Setup guide, architecture overview, example interaction |
 | `LLM project 1.pdf` | Original project specification (Section 9 = grading checklist) |
@@ -230,6 +230,11 @@ DB_PORT=3306
 DB_USER=llm-student
 DB_PASSWORD=llm12345
 DB_NAME=llm-course
+
+# Project 2 — Google Cloud OAuth 2.0
+GOOGLE_OAUTH_CLIENT_ID=....apps.googleusercontent.com
+GOOGLE_OAUTH_CLIENT_SECRET=GOCSPX-...
+OAUTHLIB_INSECURE_TRANSPORT=1
 ```
 
 `get_db_connection()` in `main.py` reads these with the remote values as hard-coded defaults, so the agent works even without a `.env` file as long as `OPENAI_API_KEY` is set.
@@ -251,4 +256,5 @@ DB_NAME=llm-course
 2026/05/15: 17.15 - 18.15
 2026/05/16: 00.58 - 02.28
 2026/05/21: 14.00 - 18.15
-2026/05/27: 11.00 - ongoing
+2026/05/27: 11.00 – 12.20
+2026/05/30: 02.20 – 02.43

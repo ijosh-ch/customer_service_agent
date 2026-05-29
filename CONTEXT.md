@@ -2,7 +2,10 @@
 
 ## What This Project Is
 
-Intelligent Customer Service Agent for LLM Project 1 (NTUST). Built with LangGraph + LangChain + OpenAI gpt-4o-mini, following the ReAct paradigm. The agent routes user queries through a planner, optional tool calls, and a verifier before responding.
+Two-project suite for LLM courses at NTUST:
+
+- **Project 1** — Intelligent Customer Service Agent built with LangGraph + LangChain + OpenAI gpt-4o-mini. Routes queries through a planner, optional tool calls, and a verifier.
+- **Project 2** — AI Workspace Agent Suite: Refund Email Agent (Gmail MCP, 6-step autonomous workflow) + Calendar Agent (dual MCP/CLI tools, ReAct loop).
 
 ## Key Files
 
@@ -13,7 +16,9 @@ Intelligent Customer Service Agent for LLM Project 1 (NTUST). Built with LangGra
 | `demo.ipynb` | Supplementary notebook — one cell per test case, includes DB-reset and graph visualisation |
 | `init_db.sql` | MySQL schema + seed data for remote `llm-course` DB |
 | `pyproject.toml` | uv project config and dependency list |
-| `.env.example` | Credentials template; DB defaults pre-filled for remote server |
+| `.env.example` | Credentials template — DB defaults + Google OAuth fields |
+| `Project 2.ipynb` | AI Workspace Agent Suite notebook — all PDF sections, both agents, 6.14 setup guide |
+| `LONG-TERM_MEMORY.md` | MySQL LTM schema, tools, seed data, and re-seed instructions |
 | `CLAUDE.md` | Static rules, conventions, file inventory |
 | `MEMORY.md` | Append-only session log |
 | `TODO.md` | Task list |
@@ -43,7 +48,9 @@ Graph compilation: `route_planner_output` sends to `"tools"` if tool calls were 
 | Service | Address | Notes |
 | --- | --- | --- |
 | Remote MySQL | `140.118.122.119:3306` | DB `llm-course`, user `llm-student` — no local MySQL needed |
-| OpenAI API | `api.openai.com` | Model `gpt-4o-mini`, key from `.env` |
+| OpenAI API | `api.openai.com` | Project 1: `gpt-4o-mini`; Project 2: `gpt-4o`; key from `.env` |
+| Google APIs | `gmail.googleapis.com`, `calendar.googleapis.com` | Project 2 — OAuth 2.0 Desktop App; client creds in `.env` |
+| workspace-mcp | local subprocess via `uvx` | MCP server for Gmail + Calendar; tokens cached at `~/.workspace-mcp/` |
 
 ## Memory System
 
