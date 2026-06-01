@@ -58,10 +58,13 @@ Natural language-driven Customer Service Agent built with **LangGraph** + **Lang
 
 | File | Purpose |
 | --- | --- |
-| `main.py` | Full agent: DB connection, all 6 tools, LangGraph nodes, graph compilation, interactive CLI entry point |
-| `LLM project 1.ipynb` | Standalone answer notebook — mirrors PDF sections 1–10, builds all code from scratch, covers all 11 test cases with live output as evidence; **primary demo notebook** |
+| `main.py` | Full agent: DB connection, 6 tools, 5-node LangGraph (memory_loader → planner ⇄ tools → verifier → memory_extractor), interactive CLI |
+| `LLM project 1.ipynb` | Primary demo notebook — 45 cells, mirrors PDF sections 1–10, colleague's 5-node architecture, all 11 test cases run automatically; **primary demo notebook** |
 | `demo.ipynb` | Supplementary demo notebook — all 11 test cases from Section 9, one cell per case; includes graph visualisation, DB-reset, and DB-verify cells |
 | `init_db.sql` | MySQL schema + seed data targeting remote `llm-course` DB; run with `mysql … < init_db.sql` |
+| `setup_db.py` | Python script — creates DB + user (local admin flow), tables, and seed data; supports `--local`, `--from-env`, `--reset` flags |
+| `REQUIREMENTS.md` | From-scratch setup guide for both projects — packages, MySQL (local + remote), uv, workspace-mcp, Google OAuth, env vars, verification |
+| `Customer Service Agent.pdf` | Project 1 slide deck (from partner's main branch) |
 | `pyproject.toml` | uv project config and Python dependencies |
 | `uv.lock` | Locked dependency tree (committed, do not edit manually) |
 | `.python-version` | Pins Python 3.10 for uv/pyenv |
@@ -82,20 +85,24 @@ Natural language-driven Customer Service Agent built with **LangGraph** + **Lang
 
 ## Architecture
 
-### LangGraph Workflow
+### LangGraph Workflow (5-node)
 
 ```text
 User Input
     |
-[Planner Node]   — LLM reasons about intent, selects tools
+[memory_loader_node]  — loads all LTM from MySQL, injects as SystemMessage
+    |
+[planner_node]        — LLM reasons about intent, selects tools
     |
     +-- tool_calls? --+
     |                 |
-    |         [Tool Node(s)]   — executes MySQL queries / business logic
+    |         [ToolNode]   — executes MySQL queries / business logic
     |                 |
-    +<----------------+
+    +<----------------+  (ReAct loop back to planner)
     |
-[Verifier Node]  — prevents hallucinations, enforces policy
+[verifier_node]       — prevents hallucinations, enforces policy
+    |
+[memory_extractor_node] — auto-extracts new preferences, upserts to MySQL
     |
 Final Response
 ```
@@ -106,9 +113,11 @@ Edge logic: `route_planner_output` → `"tools"` if the planner emitted tool cal
 
 | Node | Function | File location |
 | --- | --- | --- |
+| `memory_loader_node` | Load all LTM at turn start, inject as SystemMessage | `main.py` |
 | `planner_node` | Extract intent + entities, select tools | `main.py` |
 | `ToolNode` (prebuilt) | Execute bound tool calls | `main.py` (LangGraph prebuilt) |
 | `verifier_node` | Compliance check + rewrite if needed | `main.py` |
+| `memory_extractor_node` | Auto-extract new preferences post-verifier, upsert to MySQL silently | `main.py` |
 
 ### Memory
 
@@ -129,8 +138,8 @@ All tools receive `config: RunnableConfig` injected by LangGraph. `customer_id` 
 | `customer_profile()` | `SELECT * FROM customers WHERE customer_id=?` | Retrieve customer profile |
 | `request_refund(order_id)` | `UPDATE orders SET status='refund_requested' WHERE …` | Initiate refund |
 | `log_complaint(order_id, issue)` | `INSERT INTO complaints (…)` | Log a complaint |
-| `read_long_term_memory()` | `SELECT key, value FROM customer_memory WHERE customer_id=?` | Read LTM preferences/history |
-| `write_long_term_memory(key, value)` | `INSERT INTO customer_memory (…)` | Persist a preference or note |
+| `retrieve_memories()` | `SELECT key, value FROM customer_memory WHERE customer_id=?` | Read all LTM for this customer |
+| `store_memory(key, value)` | `INSERT … ON DUPLICATE KEY UPDATE` (upsert) | Persist or update a preference |
 
 All tools enforce **customer_id ownership** — queries are always scoped to the authenticated customer.
 
@@ -138,9 +147,9 @@ All tools enforce **customer_id ownership** — queries are always scoped to the
 
 ## Database
 
-**Remote MySQL**: `140.118.122.119:3306` / database `llm-course` / user `llm-student`
+**Remote MySQL** (lab): `140.118.122.119:3306` / database `llm-course` / user `llm-student`
 
-All four tables live on this server; no local MySQL is required.
+**Local MySQL** (this machine): `localhost:3306` / database `customer_service` / user `llm-student` / data on `D:\MySQL\data` (HDD). Config at `C:\ProgramData\MySQL\MySQL Server 8.4\my.ini`. Switch by editing `DB_HOST` and `DB_NAME` in `.env`.
 
 ```sql
 customers      (customer_id PK, name, email, created_at)
@@ -258,3 +267,5 @@ OAUTHLIB_INSECURE_TRANSPORT=1
 2026/05/21: 14.00 - 18.15
 2026/05/27: 11.00 – 12.20
 2026/05/30: 02.20 – 02.43
+2026/06/01: 23.00 – 24.00
+2026/06/02: 00.00 – 00.31

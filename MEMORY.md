@@ -19,6 +19,22 @@ Completed Project 2 notebook and set up Google OAuth credentials:
 
 ---
 
+## 2026/06/02
+
+**Commits**: `cb6de86`, `adc94b5` — 2026-06-01 23:13 and 23:30 +0800
+
+Merged partner's improved architecture, rewrote the demo notebook, created from-scratch docs, and set up local MySQL on the HDD:
+
+- Resolved merge conflict between `jupyter` and `main` branches: took partner's 5-node `main.py` (memory_loader_node, memory_extractor_node, store_memory/retrieve_memories with upsert logic) and fixed DB connection to use lab server 140.118.122.119 as default with localhost as a commented alternative
+- Rewrote `LLM project 1.ipynb` — 45 cells using the colleague's 5-node architecture; mirrors PDF sections 1–10; DB reset cell + `run_test()` helper; all 11 test cases execute automatically with node-by-node trace output; Test 7 (STM) reuses Test 2's `thread_id`
+- Created `REQUIREMENTS.md` — comprehensive from-scratch guide covering packages, MySQL (remote + local), uv, workspace-mcp, Google OAuth 6-part walkthrough, env vars, verification commands, troubleshooting
+- Created `setup_db.py` — Python script with `--local`, `--from-env`, `--reset` flags; creates DB + user + tables + seed data; tested against remote lab server
+- Set up local MySQL 8.4 on HDD: data at `D:\MySQL\data`, config at `C:\ProgramData\MySQL\MySQL Server 8.4\my.ini`; initialized with `--initialize`, started via direct `mysqld` process; created `customer_service` DB, `llm-student` user, all 4 tables, full seed data; `.env` updated to `localhost`
+- Key gotcha: Windows service install (`mysqld --install`) requires admin AND the service account (SYSTEM) needs write permission to `D:\MySQL\data` via `icacls` — without this, service starts then immediately crashes with "ibdata1 must be writable"
+- Partner uses `gpt-4o-mini` via `langchain_openai.ChatOpenAI`; `langchain-ollama` is listed as a dependency but never imported — was likely planned as a local fallback (Llama3, Mistral via Ollama)
+
+---
+
 ## 2026-05-27
 
 **Commit**: `325abf8` — 2026-05-21 22:38:21 +0800

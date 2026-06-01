@@ -11,8 +11,10 @@ Two-project suite for LLM courses at NTUST:
 
 | Path | Role |
 | --- | --- |
-| `main.py` | Agent entry point: DB connection, 6 tools, LangGraph graph, interactive CLI |
-| `LLM project 1.ipynb` | Primary demo notebook — all 11 test cases with live output, mirrors PDF sections 1–10 |
+| `main.py` | Agent entry point: DB connection, 6 tools, 5-node LangGraph graph (memory_loader → planner ⇄ tools → verifier → memory_extractor), interactive CLI |
+| `LLM project 1.ipynb` | Primary demo notebook — 45 cells, PDF sections 1–10, 5-node architecture, all 11 test cases auto-run |
+| `REQUIREMENTS.md` | Full from-scratch setup guide for both projects |
+| `setup_db.py` | Local MySQL init script — creates DB, user, tables, seeds data |
 | `demo.ipynb` | Supplementary notebook — one cell per test case, includes DB-reset and graph visualisation |
 | `init_db.sql` | MySQL schema + seed data for remote `llm-course` DB |
 | `pyproject.toml` | uv project config and dependency list |
@@ -47,7 +49,8 @@ Graph compilation: `route_planner_output` sends to `"tools"` if tool calls were 
 
 | Service | Address | Notes |
 | --- | --- | --- |
-| Remote MySQL | `140.118.122.119:3306` | DB `llm-course`, user `llm-student` — no local MySQL needed |
+| Remote MySQL (lab) | `140.118.122.119:3306` | DB `llm-course`, user `llm-student` |
+| Local MySQL (this machine) | `localhost:3306` | DB `customer_service`, data on `D:\MySQL\data` (HDD); config at `C:\ProgramData\MySQL\MySQL Server 8.4\my.ini`; start: `mysqld.exe --defaults-file=...` |
 | OpenAI API | `api.openai.com` | Project 1: `gpt-4o-mini`; Project 2: `gpt-4o`; key from `.env` |
 | Google APIs | `gmail.googleapis.com`, `calendar.googleapis.com` | Project 2 — OAuth 2.0 Desktop App; client creds in `.env` |
 | workspace-mcp | local subprocess via `uvx` | MCP server for Gmail + Calendar; tokens cached at `~/.workspace-mcp/` |
