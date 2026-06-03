@@ -72,7 +72,7 @@ Natural language-driven Customer Service Agent built with **LangGraph** + **Lang
 | `pyproject.toml` | uv project config and Python dependencies |
 | `uv.lock` | Locked dependency tree (committed, do not edit manually) |
 | `.python-version` | Pins Python 3.10 for uv/pyenv |
-| `.env.example` | Credentials template — `OPENAI_API_KEY` (primary), DGX Spark vars (optional), remote MySQL defaults, Google OAuth fields |
+| `.env.example` | Credentials template — `OPENAI_API_KEY`, DGX Spark vars (optional), remote MySQL defaults, Google OAuth fields, SMTP test-email fields (`TEST_SENDER_EMAIL`, `TEST_SENDER_APP_PASSWORD`, `TEST_TARGET_EMAIL`) |
 | `env_local_llm.yaml` | DGX Spark configuration reference — machine specs, vLLM server configs for Nemotron 49B and Llama 3.1 8B, Ollama models, launch commands, API key |
 | `requirements.txt` | pip freeze snapshot of the current `.venv` — reference only, not used by uv |
 | `.gitignore` | Excludes `.env`, `.venv`, `.claude/settings.local.json`, and `*.apps.googleusercontent.com.json` |
@@ -83,9 +83,11 @@ Natural language-driven Customer Service Agent built with **LangGraph** + **Lang
 | `MEMORY.md` | Append-only session log |
 | `TODO.md` | Task list |
 | `LONG-TERM_MEMORY.md` | MySQL LTM setup guide — schema, tools, seed data, re-seed instructions |
-| `Project 2.ipynb` | AI Workspace Agent Suite — Refund Email Agent + Calendar Agent (Project 2) |
+| `LLM project 2.ipynb` | Authoritative demo notebook for Project 2 — 63 cells, all PDF sections, OAuth verify, email seed, calendar pre-population, Refund Agent AUTO + Calendar Agent DEMO (3 testing-spec prompts) |
+| `Project 2.ipynb` | AI Workspace Agent Suite — Refund Email Agent + Calendar Agent (original working notebook) |
 | `Project 2.pdf` | Project 2 specification |
 | `AI Workspace Agent Suite.pdf` | Project 2 slide deck with architecture and setup details |
+| `.claude/settings.json` | Project-level Claude Code settings — bypassPermissions, additionalDirectories, attribution suppression |
 
 ---
 
@@ -277,3 +279,4 @@ OAUTHLIB_INSECURE_TRANSPORT=1
 2026/06/02: 00.00 – 00.31
 2026/06/02: 08.00 – 12.30
 2026/06/03: 11.30 – 12.39
+2026/06/03: 13.00 – 14.56

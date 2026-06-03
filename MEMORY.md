@@ -50,6 +50,19 @@ Spent 2026/06/02 08:00–12:30 attempting vLLM deployment on the DGX Spark (kept
 
 ---
 
+## 2026/06/03 (afternoon)
+
+**Commits**: `e5da504` → `f662521` — 2026-06-03 13:19 to 14:43 +0800
+
+Created `LLM project 2.ipynb` as the authoritative demo notebook for Project 2, ran a full compliance analysis against all 3 PDFs, fixed 4 gaps, and wired the machine-level ijosh-ch/claude preferences:
+
+- Created `LLM project 2.ipynb` (63 cells): added prerequisites check, OAuth verify cell (runs `workspace-cli call list_calendars` as subprocess — opens browser on first run), test email seed cell (8 emails inline via SMTP), calendar pre-population cell (10 events via `workspace-cli call create_calendar_event`), updated Calendar Agent demo queries to match `Testing_project_2.pdf` §1.4–1.6 exactly
+- Compliance gaps fixed: LLM model `gpt-4o-mini` → `gpt-4o` in 6 places, Gmail MCP scope `gmail:send` → `gmail` (allows read + send), duplicate `_print_setup_guide()` removed, calendar pre-population step added
+- Machine-level ijosh-ch/claude setup: installed `~/.claude/prompts/fetch-auto-daily-log.sh` + `auto-daily-log.md`, rewrote `~/.claude/settings.json` with `defaultMode: bypassPermissions`, `effortLevel: high`, attribution suppression, and `UserPromptSubmit` hook; project `.claude/settings.json` cleaned to match template
+- Key gotcha: `workspace-cli call create_calendar_event` argument format may differ — notebook falls back to instructions for running `createcalendarevents.py` directly if subprocess call fails
+
+---
+
 ## 2026-05-27
 
 **Commit**: `325abf8` — 2026-05-21 22:38:21 +0800

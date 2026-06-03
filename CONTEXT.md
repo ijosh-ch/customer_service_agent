@@ -12,8 +12,9 @@ Two-project suite for LLM courses at NTUST:
 | Path | Role |
 | --- | --- |
 | `main.py` | Agent entry point: DB connection, 6 tools, 5-node LangGraph graph (memory_loader → planner ⇄ tools → verifier → memory_extractor), interactive CLI |
-| `LLM project 1.ipynb` | Primary demo notebook — 45 cells, PDF sections 1–10, 5-node architecture, all 11 test cases auto-run |
-| `Project 2.ipynb` | AI Workspace Agent Suite notebook — all PDF sections, both agents, 6.14 setup guide |
+| `LLM project 1.ipynb` | Primary demo notebook for Project 1 — PDF sections 1–10, 5-node architecture, all 11 test cases auto-run |
+| `LLM project 2.ipynb` | **Primary demo notebook for Project 2** — 63 cells, all PDF sections, in-notebook OAuth verify, email seed, calendar pre-population (10 events via workspace-cli), Refund Agent AUTO + Calendar Agent DEMO (3 testing-spec prompts from Testing_project_2.pdf) |
+| `Project 2.ipynb` | Original working notebook for Project 2 — all PDF sections, both agents |
 | `REQUIREMENTS.md` | Full from-scratch setup guide for both projects |
 | `setup_db.py` | Local MySQL init script — creates DB, user, tables, seeds data |
 | `demo.ipynb` | Supplementary notebook — one cell per test case, includes DB-reset and graph visualisation |
@@ -21,7 +22,8 @@ Two-project suite for LLM courses at NTUST:
 | `LLMs-setup.ipynb` | vLLM server setup on the DGX Spark — reference only (Nemotron stopped) |
 | `env_local_llm.yaml` | DGX Spark configuration reference — model specs, launch commands, API key |
 | `pyproject.toml` | uv project config and dependency list |
-| `.env.example` | Credentials template — `OPENAI_API_KEY`, DGX Spark vars (optional), DB defaults, Google OAuth fields |
+| `.env.example` | Credentials template — `OPENAI_API_KEY`, DGX Spark vars (optional), DB defaults, Google OAuth fields, SMTP test-email fields |
+| `.claude/settings.json` | Project-level Claude Code settings — bypassPermissions, additionalDirectories, attribution suppression |
 | `LONG-TERM_MEMORY.md` | MySQL LTM schema, tools, seed data, and re-seed instructions |
 | `CLAUDE.md` | Static rules, conventions, file inventory |
 | `MEMORY.md` | Append-only session log |
@@ -57,7 +59,7 @@ Graph compilation: `route_planner_output` sends to `"tools"` if tool calls were 
 | --- | --- | --- |
 | Remote MySQL (lab) | `140.118.122.119:3306` | DB `llm-course`, user `llm-student` |
 | Local MySQL (this machine) | `localhost:3306` | DB `customer_service`, data on `D:\MySQL\data` (HDD); config at `C:\ProgramData\MySQL\MySQL Server 8.4\my.ini`; start: `mysqld.exe --defaults-file=...` |
-| OpenAI API | `api.openai.com` | **Primary LLM** — both projects use `gpt-4o-mini`; key in `.env` as `OPENAI_API_KEY` |
+| OpenAI API | `api.openai.com` | **Primary LLM** — Project 1 uses `gpt-4o-mini`; Project 2 uses `gpt-4o`; key in `.env` as `OPENAI_API_KEY` |
 | DGX Spark (lab) | `140.118.122.123` | NVIDIA GB10 Superchip; `nemotron.service` stopped and disabled — do not use Docker/vLLM until explicitly re-enabled |
 | Google APIs | `gmail.googleapis.com`, `calendar.googleapis.com` | Project 2 — OAuth 2.0 Desktop App; client creds in `.env` |
 | workspace-mcp | local subprocess via `uvx` | MCP server for Gmail + Calendar; tokens cached at `~/.workspace-mcp/` |
