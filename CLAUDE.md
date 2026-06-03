@@ -2,6 +2,9 @@
 
 Static knowledge snapshot. Updated each session. Do not log prompting history here.
 
+> **Global preferences**: loaded from [github.com/ijosh-ch/claude](https://github.com/ijosh-ch/claude) (private).
+> Say **"update claude from github.com/ijosh-ch/claude"** to sync global rules into this project.
+
 ---
 
 ## Behavior

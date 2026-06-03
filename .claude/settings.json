@@ -2,7 +2,8 @@
   "permissions": {
     "defaultMode": "bypassPermissions",
     "additionalDirectories": [
-      "~/Documents/GitHub"
+      "~/Documents/GitHub",
+      "~/.claude"
     ]
   },
   "skipDangerousModePermissionPrompt": true,
