@@ -2,7 +2,9 @@
 
 ## Now
 
-- [ ] Fill in `OPENAI_API_KEY` in `.env` — only remaining blocker for Project 1
+- [ ] Set `OPENAI_API_KEY=sk-...` in `.env` — required to run both notebooks
+- [ ] Run `LLM project 1.ipynb` end-to-end with live output (all 11 test cases) to verify OpenAI integration
+- [ ] Run DB-reset cell before re-running Tests 4, 5, 6
 - [ ] Register MySQL as a Windows service (run in **Admin PowerShell**):
 
   ```powershell
@@ -13,29 +15,23 @@
   Start-Service -Name MySQL84
   ```
 
+## Next
+
+- [ ] Run `Project 2.ipynb` Credentials cell after setting `OPENAI_API_KEY`
+- [ ] Run `Project 2.ipynb` Section 7 (Refund Email Agent) + Section 8 (Calendar Agent)
 - [ ] Install `uv`, then `workspace-cli` (for Project 2):
 
-  ```powershell
-  powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-  # restart terminal, then:
+  ```bash
+  curl -LsSf https://astral.sh/uv/install.sh | sh
   git clone https://github.com/taylorwilsdon/google_workspace_mcp
   cd google_workspace_mcp && uv tool install . && pip install workspace-mcp
   ```
 
-## Next
-
-- [ ] Run `LLM project 1.ipynb` end-to-end with live output (all 11 test cases)
-- [ ] Run DB-reset cell before re-running Tests 4, 5, 6
-- [ ] Run `Project 2.ipynb` Credentials cell after setting `OPENAI_API_KEY`
-- [ ] Run `Project 2.ipynb` Section 7 (Refund Email Agent) + Section 8 (Calendar Agent)
-- [ ] Add `ipykernel`, `jupyter`, `langchain-mcp-adapters`, `nest_asyncio` as explicit deps in `pyproject.toml`
-
 ## Later
 
-- [ ] Explore Ollama as local LLM alternative (`langchain-ollama` already installed) — swap `ChatOpenAI` for `ChatOllama(model="llama3.1")`, no API key needed
-- [ ] Explore migrating from Python 3.13 venv to uv-managed Python 3.10 venv once uv is installed
 - [ ] Clean up `demo.ipynb` or consolidate into `LLM project 1.ipynb`
 - [ ] Add interactive calendar example queries to `Project 2.ipynb` once credentials are working
+- [ ] Re-enable DGX Spark Nemotron (`nemotron.service`) if switching back from OpenAI
 
 ## Completed
 
@@ -52,3 +48,5 @@
 - [x] Create `REQUIREMENTS.md` — from-scratch guide for both projects
 - [x] Create `setup_db.py` — local MySQL init + seed script
 - [x] Set up local MySQL on HDD (`D:\MySQL\data`) — `customer_service` DB, tables, seed data seeded
+- [x] Switch both notebooks from DGX Spark Nemotron to OpenAI gpt-4o-mini
+- [x] Stop and disable `nemotron.service` on DGX Spark (140.118.122.123)

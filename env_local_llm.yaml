@@ -1,0 +1,164 @@
+# env_local_llm.yaml
+# Local LLM configuration for the Customer Service Agent — NVIDIA DGX Spark
+# Usage: import yaml; cfg = yaml.safe_load(open("env_local_llm.yaml"))
+
+# ── Machine Info ─────────────────────────────────────────────────────────────
+machine:
+  name: NVIDIA DGX Spark
+  ip: 140.118.122.123
+  gpu: NVIDIA GB10 (Grace Blackwell Superchip)
+  unified_memory_gb: 128          # shared CPU+GPU LPDDR5X pool
+  cpu: ARM Neoverse (Cortex-X925 x12 + Cortex-A725 x8, 20 cores)
+  storage_tb: 4
+  inference_backend: vllm
+
+# ── Access Credentials ─────────────────────────────────────────────────────────
+# vLLM uses Bearer-token authentication (--api-key flag).
+# The api_key below is the shared secret for all project members.
+# To revoke: restart vLLM with a different --api-key (see vllm_servers below).
+auth:
+  label: llm-course                # human-readable identifier for this key set
+  api_key: "llm-final-project-1-2" # the actual Bearer token clients must send
+  # How to use in Python:
+  #   from langchain_openai import ChatOpenAI
+  #   llm = ChatOpenAI(base_url="http://140.118.122.123:8090/v1",
+  #                    api_key="llm-final-project-1-2", model="nemotron-super-fp8")
+  # How to use in curl:
+  #   curl http://140.118.122.123:8090/v1/models \
+  #        -H "Authorization: Bearer llm-final-project-1-2"
+
+# ── LLM Providers ─────────────────────────────────────────────────────────────
+llm:
+
+  # PRIMARY: NVIDIA Nemotron Super 49B-v1.5 FP8
+  # Deployed via vLLM in screen session "vllm" on port 8090.
+  # Access from any machine on 140.118.122.x using the api_key above.
+  primary:
+    provider: vllm
+    base_url: http://140.118.122.123:8090/v1
+    model: nemotron-super-fp8
+    api_key: "llm-final-project-1-2"
+    temperature: 0.1
+    max_tokens: 2048
+    context_length: 16384
+
+  # LIGHTWEIGHT: Meta Llama 3.1 8B Instruct (deploy separately if needed)
+  lightweight:
+    provider: vllm
+    base_url: http://140.118.122.123:8091/v1
+    model: llama-3.1-8b-instruct
+    api_key: "llm-final-project-1-2"
+    temperature: 0.1
+    max_tokens: 2048
+    context_length: 8192
+
+  # MINIMAL: Ollama on DGX Spark (smoke tests only)
+  minimal:
+    provider: ollama
+    base_url: http://140.118.122.123:11434
+    model: llama3.2:1b
+    temperature: 0.1
+
+# ── vLLM Server Configs ────────────────────────────────────────────────────────
+vllm_servers:
+
+  nemotron_super_49b:
+    model: nvidia/Llama-3_3-Nemotron-Super-49B-v1_5-FP8
+    port: 8090
+    host: 0.0.0.0                  # bind to all interfaces for remote access
+    served_model_name: nemotron-super-fp8
+    api_key: "llm-final-project-1-2"
+    gpu_memory_utilization: 0.42   # ~54 GB of 128 GB unified pool
+    max_model_len: 16384
+    max_num_seqs: 16
+    status: running                # screen -S vllm
+    # ── To start (or restart with auth) ──
+    launch_cmd: |
+      vllm serve nvidia/Llama-3_3-Nemotron-Super-49B-v1_5-FP8 \
+          --host 0.0.0.0 \
+          --port 8090 \
+          --served-model-name nemotron-super-fp8 \
+          --api-key llm-final-project-1-2 \
+          --trust-remote-code \
+          --max-model-len 16384 \
+          --gpu-memory-utilization 0.42 \
+          --max-num-seqs 16 \
+          --safetensors-load-strategy=prefetch
+    # ── To revoke and reissue a new key ──
+    # 1. screen -r vllm  →  Ctrl+C  (stop server)
+    # 2. Change --api-key to the new value above
+    # 3. Restart with the new launch_cmd
+    # 4. Distribute the new key to teammates; old key stops working immediately
+
+  llama_3_1_8b:
+    model: meta-llama/Llama-3.1-8B-Instruct
+    port: 8091
+    host: 0.0.0.0
+    served_model_name: llama-3.1-8b-instruct
+    api_key: "llm-final-project-1-2"
+    gpu_memory_utilization: 0.15
+    max_model_len: 8192
+    max_num_seqs: 32
+    dtype: float16
+    status: not_started
+    hf_token_required: true
+    launch_cmd: |
+      vllm serve meta-llama/Llama-3.1-8B-Instruct \
+          --host 0.0.0.0 \
+          --port 8091 \
+          --served-model-name llama-3.1-8b-instruct \
+          --api-key llm-final-project-1-2 \
+          --trust-remote-code \
+          --max-model-len 8192 \
+          --gpu-memory-utilization 0.15 \
+          --max-num-seqs 32 \
+          --dtype float16
+
+  llama_3_1_nemotron_nano_8b:
+    model: nvidia/Llama-3.1-Nemotron-Nano-8B-v1
+    port: 8091
+    host: 0.0.0.0
+    served_model_name: nemotron-nano-8b
+    api_key: "llm-final-project-1-2"
+    gpu_memory_utilization: 0.15
+    max_model_len: 8192
+    max_num_seqs: 32
+    dtype: bfloat16
+    status: not_started
+    hf_token_required: false
+    launch_cmd: |
+      vllm serve nvidia/Llama-3.1-Nemotron-Nano-8B-v1 \
+          --host 0.0.0.0 \
+          --port 8091 \
+          --served-model-name nemotron-nano-8b \
+          --api-key llm-final-project-1-2 \
+          --trust-remote-code \
+          --max-model-len 8192 \
+          --gpu-memory-utilization 0.15 \
+          --max-num-seqs 32 \
+          --dtype bfloat16
+
+# ── Ollama Models ──────────────────────────────────────────────────────────────
+ollama_models:
+  - name: llama3.2:1b
+    installed: true
+    params_b: 1.2
+    quantization: Q8_0
+    size_gb: 1.3
+    use_case: smoke testing only
+  - name: llama3.1:8b
+    installed: false
+    params_b: 8.0
+    use_case: lightweight production (no HF token needed)
+    pull_cmd: ollama pull llama3.1:8b
+
+# ── Agent Integration ──────────────────────────────────────────────────────────
+agent:
+  active_provider: primary         # "primary" | "lightweight" | "minimal"
+
+  db:
+    host: 140.118.122.119
+    port: 3306
+    user: llm-student
+    password: llm12345
+    name: llm-course

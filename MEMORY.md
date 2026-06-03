@@ -35,6 +35,21 @@ Merged partner's improved architecture, rewrote the demo notebook, created from-
 
 ---
 
+## 2026/06/03
+
+**Commit**: `fc4ec66` — 2026-06-02 00:35:17 +0800
+
+Spent 2026/06/02 08:00–12:30 attempting vLLM deployment on the DGX Spark (kept failing); abandoned DGX Spark as primary LLM and switched both notebooks to OpenAI gpt-4o-mini. Stopped the Nemotron systemd service on the lab server:
+
+- Changed `LLM project 1.ipynb` credentials cell and LLM backend section: removed `DGX_SPARK_URL / DGX_MODEL / DGX_API_KEY` hard-coded defaults, replaced with `OPENAI_API_KEY / OPENAI_MODEL` (defaults to `gpt-4o-mini`); updated title header and LLM Backend markdown cell to describe OpenAI instead of DGX Spark
+- Changed `Project 2.ipynb` credentials cell, `build_gmail_agent()`, and `build_calendar_agent()` similarly; updated title, Overview, and Tech Stack markdown cells; updated `_print_setup_guide()` to show `OPENAI_API_KEY` instead of `DGX_SPARK_URL`
+- Investigated Nemotron on the DGX Spark (140.118.122.123): found `nemotron.service` systemd service keeping vLLM alive — killing the PID alone was insufficient because systemd restarted it immediately; stopped and disabled the service with `sudo systemctl stop nemotron.service && sudo systemctl disable nemotron.service`
+- Confirmed: Docker is not installed on either this machine or the DGX Spark; no Docker-based LLM services to stop
+- Key gotcha: always check `systemctl list-units` when a killed process keeps reappearing — a systemd service is the common culprit
+- Established rule: do not use Docker-based LLM services for these projects until the user explicitly says so
+
+---
+
 ## 2026-05-27
 
 **Commit**: `325abf8` — 2026-05-21 22:38:21 +0800

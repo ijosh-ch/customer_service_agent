@@ -61,6 +61,7 @@ Natural language-driven Customer Service Agent built with **LangGraph** + **Lang
 | `main.py` | Full agent: DB connection, 6 tools, 5-node LangGraph (memory_loader → planner ⇄ tools → verifier → memory_extractor), interactive CLI |
 | `LLM project 1.ipynb` | Primary demo notebook — 45 cells, mirrors PDF sections 1–10, colleague's 5-node architecture, all 11 test cases run automatically; **primary demo notebook** |
 | `demo.ipynb` | Supplementary demo notebook — all 11 test cases from Section 9, one cell per case; includes graph visualisation, DB-reset, and DB-verify cells |
+| `LLMs-setup.ipynb` | DGX Spark vLLM server setup guide — installs vLLM, starts Nemotron 49B, opens network access; run on the DGX Spark (140.118.122.123) |
 | `init_db.sql` | MySQL schema + seed data targeting remote `llm-course` DB; run with `mysql … < init_db.sql` |
 | `setup_db.py` | Python script — creates DB + user (local admin flow), tables, and seed data; supports `--local`, `--from-env`, `--reset` flags |
 | `REQUIREMENTS.md` | From-scratch setup guide for both projects — packages, MySQL (local + remote), uv, workspace-mcp, Google OAuth, env vars, verification |
@@ -68,7 +69,9 @@ Natural language-driven Customer Service Agent built with **LangGraph** + **Lang
 | `pyproject.toml` | uv project config and Python dependencies |
 | `uv.lock` | Locked dependency tree (committed, do not edit manually) |
 | `.python-version` | Pins Python 3.10 for uv/pyenv |
-| `.env.example` | Template for required environment variables (DB defaults + Google OAuth fields pre-filled) |
+| `.env.example` | Credentials template — `OPENAI_API_KEY` (primary), DGX Spark vars (optional), remote MySQL defaults, Google OAuth fields |
+| `env_local_llm.yaml` | DGX Spark configuration reference — machine specs, vLLM server configs for Nemotron 49B and Llama 3.1 8B, Ollama models, launch commands, API key |
+| `requirements.txt` | pip freeze snapshot of the current `.venv` — reference only, not used by uv |
 | `.gitignore` | Excludes `.env`, `.venv`, `.claude/settings.local.json`, and `*.apps.googleusercontent.com.json` |
 | `.vscode/settings.json` | VSCode workspace settings — pins Jupyter server to Python 3.12 (working `jupyter_server`) |
 | `README.md` | Setup guide, architecture overview, example interaction |
@@ -211,7 +214,7 @@ python -m venv --prompt llm .venv
 # source .venv/bin/activate  # macOS/Linux
 
 # 4. Install dependencies
-pip install langchain langchain-openai langchain-ollama langgraph mysql-connector-python python-dotenv ipykernel jupyter
+pip install langchain langchain-openai langgraph langchain-mcp-adapters mysql-connector-python python-dotenv ipykernel jupyter nest-asyncio
 python -m ipykernel install --user --name llms --display-name "llms"
 ```
 
@@ -269,3 +272,5 @@ OAUTHLIB_INSECURE_TRANSPORT=1
 2026/05/30: 02.20 – 02.43
 2026/06/01: 23.00 – 24.00
 2026/06/02: 00.00 – 00.31
+2026/06/02: 08.00 – 12.30
+2026/06/03: 11.30 – 12.39
