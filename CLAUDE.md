@@ -88,6 +88,11 @@ Natural language-driven Customer Service Agent built with **LangGraph** + **Lang
 | `Project 2.pdf` | Project 2 specification |
 | `AI Workspace Agent Suite.pdf` | Project 2 slide deck with architecture and setup details |
 | `.claude/settings.json` | Project-level Claude Code settings — bypassPermissions, additionalDirectories, attribution suppression |
+| `Project-2/README.md` | Project 2 testing notes — links to testing procedure, calendar event script, email script |
+| `Project-2/Testing_project_2.pdf` | Testing specification — Calendar Agent (3 prompts + 10 seed events) + Refund Agent (8 email categories + success criteria) |
+| `Project-2/createcalendarevents.py` | Python script — creates 10 test calendar events (Jun 1–5) via Google Calendar API; requires `token.json` |
+| `Project-2/sendtestemails.py` | Python script — sends 8 test emails via SMTP (2 REFUND, 2 RETURN, 2 COMPLAINT, 2 OTHER) |
+| `Project-2/project description with reference architecture .pdf` | Project 2 spec PDF (same content as `Project 2.pdf` at root) |
 
 ---
 
@@ -279,4 +284,4 @@ OAUTHLIB_INSECURE_TRANSPORT=1
 2026/06/02: 00.00 – 00.31
 2026/06/02: 08.00 – 12.30
 2026/06/03: 11.30 – 12.39
-2026/06/03: 13.00 – 14.56
+2026/06/03: 13.00 – 15.15
