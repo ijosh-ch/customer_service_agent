@@ -3,7 +3,7 @@
 ## Now
 
 - [ ] Set `OPENAI_API_KEY=sk-...` in `.env` — required to run both notebooks
-- [ ] Run `LLM project 1.ipynb` end-to-end with live output (all 11 test cases) to verify OpenAI integration
+- [x] Run `LLM project 1.ipynb` end-to-end with live output (all 11 test cases) to verify OpenAI integration
 - [ ] Demo day prep: run `workspace-cli call list_calendars` (OAuth verify) before opening `LLM project 2.ipynb`
 
 ## Next

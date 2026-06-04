@@ -63,6 +63,18 @@ Created `LLM project 2.ipynb` as the authoritative demo notebook for Project 2, 
 
 ---
 
+## 2026/06/04
+
+**Commit**: `f8faa20` — 2026-06-03 15:17:02 +0800 (previous session boundary)
+
+Ran `LLM project 1.ipynb` end-to-end with a valid OpenAI API key — all 11 test cases produced successful agent responses, replacing previous `AuthenticationError` outputs from the placeholder key:
+
+- All 11 tests passed: intent parsing, order lookup, customer profile, refund, complaint, multi-step reasoning, STM recall, LTM read, LTM write, personalization, and verifier rejection
+- Notebook run in VS Code Jupyter (Python 3.12 kernel) — tqdm `IProgress` warning appeared (non-blocking)
+- Key confirmation: OpenAI `gpt-4o-mini` integration with remote MySQL at `140.118.122.119` is verified end-to-end
+
+---
+
 ## 2026-05-27
 
 **Commit**: `325abf8` — 2026-05-21 22:38:21 +0800
